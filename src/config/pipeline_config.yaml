@@ -1,0 +1,161 @@
+# Vehicle Inpainting Pipeline Configuration
+# ==========================================
+
+scene_analysis:
+  depth:
+    model: "depth-anything-v2-large"  # or "zoedepth"
+    device: "cuda"
+    normalize: true
+    
+  segmentation:
+    model: "sam2-hiera-large"  # or "grounded-dino"
+    device: "cuda"
+    points_per_side: 32
+    pred_iou_thresh: 0.88
+    stability_score_thresh: 0.95
+    
+  zone_detection:
+    min_zone_size: [100, 60]  # [width, height] in pixels
+    max_depth_variance: 0.15  # relative variance threshold
+    valid_surfaces: ["road", "terrain", "ground", "asphalt"]
+    margin_from_edge: 50  # pixels from image edge
+
+rendering:
+  resolution: [1024, 1024]
+  samples: 128
+  engine: "CYCLES"
+  device: "GPU"
+  
+  camera:
+    azimuth_step: 30  # degrees, 12 views
+    elevation_list: [0, 15, 30, -10]
+    distance_list: [4.0, 6.0, 10.0]
+    
+  export_passes:
+    - rgb
+    - depth
+    - normal
+    - mask
+    - ambient_occlusion
+    
+  output_format:
+    rgb: "PNG"
+    depth: "OPEN_EXR"
+    normal: "PNG"
+    mask: "PNG"
+
+inpainting:
+  model: "flux2-dev-fp8"  # or "sd15-inpaint", "sdxl-inpaint"
+  device: "cuda"
+  
+  scale_aware:
+    processing_resolution: 1024
+    min_crop_size: 512
+    context_expand_factor: 2.0
+    context_expand_pixels: 96
+    
+  mask:
+    blur_pixels: 28
+    dilate_pixels: 4
+    feather_pixels: 32
+    
+  sampling:
+    steps: 20
+    cfg_scale: 1.2  # for Flux2
+    sampler: "euler"
+    scheduler: "normal"
+    
+  controlnet:
+    depth:
+      enabled: true
+      strength: 0.7
+      model: "controlnet-depth-flux"
+    normal:
+      enabled: false
+      strength: 0.5
+      model: "controlnet-normal-flux"
+
+harmonization:
+  blending:
+    method: "differential"  # or "poisson", "laplacian"
+    feather_pixels: 32
+    fallback_to_poisson: true
+    
+  color:
+    enabled: true
+    method: "lab_transfer"  # or "histogram_matching"
+    context_dilation: 20  # pixels around mask for color sampling
+    
+  shadow:
+    enabled: true
+    intensity: 0.4
+    blur_sigma: 15
+    offset_scale: 1.1
+
+quality_assurance:
+  metrics:
+    clip_score:
+      enabled: true
+      threshold: 0.25
+      model: "ViT-B/32"
+      
+    artifact_detection:
+      enabled: true
+      threshold: 0.15
+      blur_weight: 0.3
+      edge_weight: 0.4
+      anomaly_weight: 0.3
+      
+    edge_consistency:
+      enabled: true
+      threshold: 0.85
+      
+    color_harmony:
+      enabled: true
+      threshold: 0.80
+      
+    geometry_score:
+      enabled: true
+      threshold: 0.75
+      
+  filtering:
+    reject_on_any_fail: true
+    save_rejected: true
+    rejected_dir: "output/rejected"
+
+annotation:
+  formats:
+    - coco
+    - yolo
+    
+  categories:
+    - id: 1
+      name: "tank"
+      supercategory: "military_vehicle"
+    - id: 2
+      name: "apc"
+      supercategory: "military_vehicle"
+    - id: 3
+      name: "truck"
+      supercategory: "military_vehicle"
+    - id: 4
+      name: "car"
+      supercategory: "civilian_vehicle"
+      
+  output:
+    coco_file: "annotations.json"
+    yolo_dir: "labels"
+    include_segmentation: true
+
+orchestrator:
+  batch_size: 10
+  num_workers: 4
+  save_intermediate: false
+  verbose: true
+  
+  paths:
+    backgrounds: "assets/backgrounds"
+    models_3d: "assets/3d_models"
+    renders: "assets/renders"
+    output: "output/generated"
+    dataset: "output/dataset"

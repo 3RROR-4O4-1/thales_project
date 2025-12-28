@@ -1,0 +1,52 @@
+# Vehicle Inpainting Pipeline - Requirements
+# ==========================================
+
+# Core
+numpy>=1.24.0
+scipy>=1.10.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+PyYAML>=6.0
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Depth Estimation
+transformers>=4.35.0
+# For ZoeDepth: install via torch.hub
+
+# Segmentation (SAM)
+# segment-anything @ git+https://github.com/facebookresearch/segment-anything.git
+
+# Image Quality
+# clip @ git+https://github.com/openai/CLIP.git
+lpips>=0.1.4
+
+# ComfyUI Integration
+websocket-client>=1.6.0
+requests>=2.31.0
+
+# Blender (run within Blender's Python)
+# bpy (included with Blender)
+
+# OpenEXR for depth maps (optional)
+# OpenEXR>=3.2.0
+
+# Visualization & Analysis
+matplotlib>=3.7.0
+tqdm>=4.65.0
+
+# Dataset Management
+pycocotools>=2.0.6
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+isort>=5.12.0
+
+# Optional: GPU acceleration
+# cupy-cuda12x>=12.0.0
+
+# Optional: For histogram matching
+scikit-image>=0.21.0
