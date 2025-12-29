@@ -182,9 +182,9 @@ class PipelineOrchestrator:
         
         # Quality assurance
         qa_config = QAConfig(
-            clip_threshold=self.config.min_clip_score,
-            artifact_threshold=self.config.max_artifact_score,
-            edge_threshold=self.config.min_edge_consistency
+            clip_score=self.config.min_clip_score,
+            artifact_score=self.config.max_artifact_score,
+            edge_consistency=self.config.min_edge_consistency
         )
         self.qa = QualityAssurance(qa_config)
         

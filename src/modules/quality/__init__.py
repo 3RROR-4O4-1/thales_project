@@ -22,7 +22,7 @@ from .filtering import (
 
 # Aliases for orchestrator compatibility
 QualityAssurance = QualityFilter
-QAConfig = QualityThresholds
+
 
 # Add evaluate method wrapper for compatibility
 class QualityAssurance(QualityFilter):
