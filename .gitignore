@@ -153,5 +153,6 @@ cython_debug/
 
 
 /src/assets/renders/t90/
-
+/src/assets/renders/
 /src/venv/
+/src/outputs/
