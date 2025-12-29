@@ -12,8 +12,6 @@ import numpy as np
 import cv2
 import yaml
 
-import sys
-sys.path.append('..')
 from ..utils import BoundingBox
 
 
@@ -231,7 +229,13 @@ class YOLOExporter:
                     )
             
             elif 'bbox' in ann:
-                yolo_bbox = self._bbox_to_yolo(ann['bbox'], w, h)
+                # Handle both BoundingBox objects and tuple/list
+                bbox = ann['bbox']
+                if isinstance(bbox, BoundingBox):
+                    bbox_tuple = bbox.to_xywh()
+                else:
+                    bbox_tuple = tuple(bbox)
+                yolo_bbox = self._bbox_to_yolo(bbox_tuple, w, h)
                 label_lines.append(
                     f"{class_id} {yolo_bbox[0]:.6f} {yolo_bbox[1]:.6f} "
                     f"{yolo_bbox[2]:.6f} {yolo_bbox[3]:.6f}"

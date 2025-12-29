@@ -5,6 +5,7 @@ Coordinates all pipeline modules for batch processing of synthetic vehicle
 insertion into background images.
 
 UPDATED: Integrates ReferenceSelector for viewpoint-aware vehicle selection.
+FIXED: Corrected QAConfig field names and SceneAnalysisResult attribute access.
 """
 
 import os
@@ -25,7 +26,7 @@ from modules.utils import (
     load_config, ensure_dir, BoundingBox, ValidZone, 
     VehicleRender, GenerationResult, normalize_image, denormalize_image
 )
-from modules.scene_analysis import SceneAnalyzer
+from modules.scene_analysis import SceneAnalyzer, SceneAnalysisResult
 from modules.inpainting import ScaleAwareInpainter, ScaleAwareConfig, create_inpaint_function
 from modules.harmonization import EdgeHarmonizer, HarmonizationConfig
 from modules.quality import QualityAssurance, QAConfig
@@ -57,7 +58,7 @@ class PipelineConfig:
     num_workers: int = 4
     
     # Reference selection
-    use_viewpoint_matching: bool = True  # NEW: Enable viewpoint-aware selection
+    use_viewpoint_matching: bool = True  # Enable viewpoint-aware selection
     
     # Quality
     min_clip_score: float = 0.25
@@ -100,7 +101,7 @@ class PipelineOrchestrator:
     
     Coordinates:
     - Scene analysis for valid insertion zones
-    - Viewpoint-aware vehicle render selection (NEW)
+    - Viewpoint-aware vehicle render selection
     - Scale-aware inpainting
     - Edge harmonization
     - Quality assurance
@@ -128,10 +129,10 @@ class PipelineOrchestrator:
         # Setup directories
         self._setup_directories()
         
-        # Reference selectors by vehicle class (NEW)
+        # Reference selectors by vehicle class
         self.reference_selectors: Dict[str, ReferenceSelector] = {}
         
-        # Viewpoint estimator (NEW)
+        # Viewpoint estimator
         self.viewpoint_estimator = ViewpointEstimator()
         
         # Statistics
@@ -141,7 +142,7 @@ class PipelineOrchestrator:
             "total_rejected": 0,
             "by_class": {},
             "by_rejection_reason": {},
-            "viewpoint_matches": []  # NEW: Track viewpoint matching stats
+            "viewpoint_matches": []  # Track viewpoint matching stats
         }
     
     def _load_config(self, config) -> PipelineConfig:
@@ -180,7 +181,7 @@ class PipelineOrchestrator:
         )
         self.harmonizer = EdgeHarmonizer(harm_config)
         
-        # Quality assurance
+        # Quality assurance - FIXED: Use correct field names
         qa_config = QAConfig(
             clip_score=self.config.min_clip_score,
             artifact_score=self.config.max_artifact_score,
@@ -205,7 +206,7 @@ class PipelineOrchestrator:
     def load_vehicle_renders(self, renders_dir: Optional[str] = None) -> Dict[str, List[VehicleRender]]:
         """
         Load pre-rendered vehicle images organized by class.
-        Also initializes ReferenceSelector for each vehicle class (NEW).
+        Also initializes ReferenceSelector for each vehicle class.
         
         Args:
             renders_dir: Directory containing rendered vehicles
@@ -237,7 +238,7 @@ class PipelineOrchestrator:
                 if vehicle_class not in renders_by_class:
                     renders_by_class[vehicle_class] = []
                 
-                # Initialize ReferenceSelector for this model (NEW)
+                # Initialize ReferenceSelector for this model
                 if self.config.use_viewpoint_matching:
                     if vehicle_class not in self.reference_selectors:
                         self.reference_selectors[vehicle_class] = {}
@@ -420,7 +421,7 @@ class PipelineOrchestrator:
         available_renders: List[VehicleRender]
     ) -> Tuple[VehicleRender, Dict]:
         """
-        Select the best vehicle render based on background viewpoint (NEW).
+        Select the best vehicle render based on background viewpoint.
         
         Args:
             background: Background image
@@ -528,9 +529,10 @@ class PipelineOrchestrator:
         
         # Analyze scene
         logger.debug(f"Analyzing scene: {background_path}")
-        scene_info = self.scene_analyzer.analyze(background)
+        scene_info: SceneAnalysisResult = self.scene_analyzer.analyze(background)
         
-        valid_zones = scene_info.get('valid_zones', [])
+        # FIXED: Access as dataclass attribute, not dict
+        valid_zones = scene_info.valid_zones
         if not valid_zones:
             logger.warning(f"No valid insertion zones found in {background_path}")
             return results
@@ -544,7 +546,7 @@ class PipelineOrchestrator:
             if not vehicle_renders[vehicle_class]:
                 continue
             
-            # Select BEST render based on viewpoint (UPDATED)
+            # Select BEST render based on viewpoint
             vehicle_render, selection_metadata = self.select_best_render(
                 background,
                 vehicle_class,
@@ -582,7 +584,7 @@ class PipelineOrchestrator:
         self,
         job: GenerationJob,
         background: np.ndarray,
-        scene_info: Dict
+        scene_info: SceneAnalysisResult
     ) -> Optional[GenerationResult]:
         """Process a single generation job."""
         import time
@@ -608,7 +610,7 @@ class PipelineOrchestrator:
                     background,
                     mask,
                     vehicle_render=scaled_render.rgb,
-                    depth_map=scene_info.get('depth'),
+                    depth_map=scene_info.depth_map,  # FIXED: Access as attribute
                     inpaint_kwargs={
                         'prompt': f"Insert {job.vehicle_class} naturally into the scene",
                         'reference': scaled_render.rgb
@@ -618,13 +620,18 @@ class PipelineOrchestrator:
                 # Fallback: simple composite
                 generated = self._simple_composite(background, scaled_render, zone)
             
+            # FIXED: Access lighting_info as attribute, then get light_direction from dict
+            light_direction = None
+            if scene_info.lighting_info:
+                light_direction = scene_info.lighting_info.get('light_direction')
+            
             # Harmonize
             harmonized = self.harmonizer.harmonize(
                 background,
                 generated,
                 mask,
                 vehicle_mask=mask,
-                light_direction=scene_info.get('light_direction')
+                light_direction=light_direction
             )
             
             # Quality check

@@ -11,8 +11,6 @@ from dataclasses import dataclass, field
 import cv2
 import logging
 
-import sys
-sys.path.append('..')
 from ..utils import BoundingBox, ValidZone
 
 logger = logging.getLogger(__name__)

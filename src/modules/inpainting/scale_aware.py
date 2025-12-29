@@ -11,8 +11,6 @@ from typing import Dict, Optional, Tuple, List, Callable
 from dataclasses import dataclass, field
 import logging
 
-import sys
-sys.path.append('..')
 from ..utils import BoundingBox, normalize_image, denormalize_image, resize_image
 
 logger = logging.getLogger(__name__)

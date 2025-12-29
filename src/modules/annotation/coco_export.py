@@ -12,8 +12,6 @@ from dataclasses import dataclass, field, asdict
 import numpy as np
 from pathlib import Path
 
-import sys
-sys.path.append('..')
 from ..utils import BoundingBox, mask_to_polygon
 
 
@@ -203,7 +201,8 @@ class COCOExporter:
         image: np.ndarray,
         annotations: List[Dict],
         filename: Optional[str] = None,
-        split: Optional[str] = None
+        split: Optional[str] = None,
+        metadata: Optional[Dict] = None
     ) -> int:
         """
         Add an image with annotations to the dataset.
@@ -216,6 +215,7 @@ class COCOExporter:
                 - OR bbox: Bounding box [x, y, w, h]
             filename: Optional filename (auto-generated if not provided)
             split: Force specific split ('train', 'val', 'test')
+            metadata: Optional additional metadata (ignored but accepted for compatibility)
             
         Returns:
             Image ID
