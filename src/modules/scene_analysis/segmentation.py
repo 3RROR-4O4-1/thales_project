@@ -315,7 +315,7 @@ class SceneSegmenter:
     # Surface type classifications
     GROUND_LABELS = ["road", "ground", "terrain", "floor", "pavement", "asphalt", "dirt", "grass"]
     SKY_LABELS = ["sky", "cloud"]
-    OBSTACLE_LABELS = ["building", "tree", "car", "person", "pole", "sign"]
+    OBSTACLE_LABELS = ["building", "tree", "person", "pole", "sign"]
     
     def __init__(self, config: Optional[SegmentationConfig] = None):
         self.config = config or SegmentationConfig()
